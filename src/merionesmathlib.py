@@ -12,6 +12,19 @@
 # convert_degrees, convert_lenght
 #
 
+##
+# Memoized wrapper
+# Wraps the function such that it remembers what it output for a set input
+#
+
+def memoized(fn):
+    mem = {}
+    def memo_fn(*args):
+        x = (args)
+        if x not in mem:
+            mem[x] = fn(*x)
+        return mem[x]
+    return memo_fn
 
 ##
 # @brief Class for Meriones Math Library
@@ -163,6 +176,7 @@ class MerionesLib:
     # @return factorial of number n
 
     @staticmethod
+    @memoized
     def factorial(n):
         #if (type(n) != int or n < 0) and n < 990 and n > -990: Removed until gamma function is fixed
         #    return MerionesLib.gamma(n)
@@ -172,19 +186,25 @@ class MerionesLib:
         if n == 0:
             return 1
         else:
-            return n * MerionesLib.factorial(n-1)
+            try:
+                return n * MerionesLib.factorial(n-1)
+            except RecursionError:
+                raise ValueError('Ma ERROR')
 
     ##
     # Method calculates a base raised to a power
     #
     # @param base base of the power
     # @param exponent exponent determines how many times the base will be multiplied
-    # @exception Ma ERROR if the exponent parameter isn't an inteeger or is less or equal to zero
+    # @exception Ma ERROR if the exponent parameter isn't an integer or is less than zero or if we're trying to calculate 0^0
     # @return base raised to the power
 
     @staticmethod
     def power(base, exponent):
-        if type(exponent) != int or exponent <= 0:
+        if exponent==0:
+            if base==0:
+                raise ValueError('Ma ERROR')
+        if type(exponent) != int or exponent < 0:
             # print("Error - exponent has to be a positive integer!")
             raise ValueError('Ma ERROR')
         return round(base**exponent, 13)
@@ -291,6 +311,7 @@ class MerionesLib:
     ]
 
     #TODO: fix double overflow error
+    #NOTE: This function does not return expected values when it does't error (ex: x=6)
     def gamma(x):
         if x < 0.5:
             y = MerionesLib.pi / (MerionesLib.sin(MerionesLib.pi*x) * MerionesLib.gamma(1-x)) ### Reflection formula 
@@ -341,8 +362,6 @@ class MerionesLib:
             return round(x * 2.20462262, 13)
         elif units == 't':
             return round(x * 0.001, 13)
-        elif units == 'kg':
-            return round(x, 13)
         else:
             # print("Error - wrong units!")
             raise ValueError('Ma ERROR')
@@ -501,7 +520,7 @@ class MerionesLib:
 
         # concatenate numbers that are writen in format like "126e+145"
         for index, item in enumerate(result):
-            if item[-1]=="e" and item != "e":
+            if len(item)>0 and item[-1]=="e" and item != "e":
                 result[index:index + 3] = [''.join(result[index:index + 3])]
 
         # check the parsed expression for syntactic errors
